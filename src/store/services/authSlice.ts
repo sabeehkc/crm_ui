@@ -1,22 +1,29 @@
-import { apiSlice } from './apiSlice'
-import { AUTH_URL } from '../constants'
-import { setCredentials, updateTokens, logOut } from '../slices/authSlice'
+import { apiSlice } from './apiSlice';
+import { AUTH_URL } from '../constants';
+import { setCredentials, logOut, updateTokens } from '../slices/authSlice';
+import { IUser } from '@/types/user';
 
-import type { registerRequest, registerResponse, loginRequest, loginResponse } from '@/types/auth';
-
-export interface RefreshTokenResponse {
-    success: boolean;
-    message?: string;
-    data: {
-      accessToken: string;
-      refreshToken: string;
-    };
+interface loginResponse {
+  success: boolean;
+  message: string;
+  data: {
+    user: IUser;
+    accessToken: string;
+    refreshToken: string;
+  };
 }
 
-const authSlice = apiSlice.injectEndpoints({
-  endpoints: (builder) => ({
+interface RefreshTokenResponse {
+  success: boolean;
+  data: {
+    accessToken: string;
+    refreshToken: string;
+  };
+}
 
-    register: builder.mutation<registerResponse, registerRequest>({
+export const authSlice = apiSlice.injectEndpoints({
+  endpoints: (builder) => ({
+    register: builder.mutation<loginResponse, Partial<IUser> & { companyName?: string }>({
         query: (data) => ({
             url: `${AUTH_URL}/register`,
             method: 'POST',
@@ -40,7 +47,7 @@ const authSlice = apiSlice.injectEndpoints({
         }
     }),
 
-    login: builder.mutation<loginResponse, loginRequest>({
+    login: builder.mutation<loginResponse, Partial<IUser>>({
         query: (data) => ({
             url: `${AUTH_URL}/login`,
             method: 'POST',
@@ -60,30 +67,6 @@ const authSlice = apiSlice.injectEndpoints({
                 }
             } catch (error) {
                 console.error('Login failed:', error)
-            }
-        }
-    }),
-
-    googleLogin: builder.mutation<loginResponse, { credential: string }>({
-        query: (data) => ({
-            url: `${AUTH_URL}/google`,
-            method: 'POST',
-            body: data,
-        }),
-        async onQueryStarted(arg, { dispatch, queryFulfilled }) {
-            try {
-                const { data } = await queryFulfilled
-                if (data.success && data.data) {
-                    const { user, accessToken, refreshToken } = data.data
-                    if (typeof window !== 'undefined') {
-                        localStorage.setItem('accessToken', accessToken)
-                        localStorage.setItem('refreshToken', refreshToken)
-                        localStorage.setItem('user', JSON.stringify(user))
-                    }
-                    dispatch(setCredentials({ user, accessToken, refreshToken }))
-                }
-            } catch (error) {
-                console.error('Google login failed:', error)
             }
         }
     }),
@@ -109,7 +92,6 @@ const authSlice = apiSlice.injectEndpoints({
             dispatch(updateTokens({ accessToken: data.data.accessToken, refreshToken: data.data.refreshToken }))
           }
         } catch (error) {
-
           // Handle error - clear all auth data if refresh fails
           if (typeof window !== 'undefined') {
             localStorage.removeItem('accessToken')
@@ -122,7 +104,6 @@ const authSlice = apiSlice.injectEndpoints({
         }
       },
     }),
-
 
     logout: builder.mutation<void, void>({
       query: () => ({
@@ -146,7 +127,6 @@ const authSlice = apiSlice.injectEndpoints({
           }
           dispatch(logOut())
         } catch (error) {
-
           // Even if logout fails, clear local data
           if (typeof window !== 'undefined') {
             localStorage.removeItem('accessToken')
@@ -159,15 +139,12 @@ const authSlice = apiSlice.injectEndpoints({
         }
       },
     }),
-  
   }),
 });
 
 export const {
     useRegisterMutation,
     useLoginMutation,
-    useGoogleLoginMutation,
     useRefreshTokenMutation,
     useLogoutMutation,
  } = authSlice;
-
