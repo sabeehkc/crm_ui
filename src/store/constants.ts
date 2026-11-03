@@ -1,4 +1,5 @@
-export const BASE_URL = 'http://localhost:5025'
+// export const BASE_URL = 'http://localhost:5025'
+export const BASE_URL = 'https://crm-apis-yiuy.onrender.com'
 
 export const AUTH_URL = '/api/v1/auth'
 export const USER_URL = '/api/v1/users'
